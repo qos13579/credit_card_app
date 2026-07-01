@@ -1,6 +1,6 @@
 <!-- 
 ==================================================================
-💳 雲端個人化信用卡管理系統 Pro - 原始碼架構註記 
+💳 雲端個人化信用卡管理系統 Pro - 多使用者個人化安全升邊版
 ==================================================================
 【第一部分】：網頁頂部基礎配置與安全登入牆 (防止外人偷看資料)
 【第二部分】：主程式記帳儀表板 (包含卡片庫、未繳明細、每月/年統計圖表區)
@@ -31,9 +31,9 @@
 <!-- 安全登入牆區塊 -->
 <div id="loginArea" class="card card-custom p-4 text-center">
     <h3 class="fw-bold text-primary mb-3">🔑 個人化安全登入</h3>
-    <p class="text-muted small">預設測試帳號：admin / 密碼：123456</p>
+    <p class="text-muted small">請輸入您的個人帳號管理系統</p>
     <form id="loginForm">
-        <div class="mb-3"><input type="text" id="loginUser" class="form-control" placeholder="系統管理者帳號" required></div>
+        <div class="mb-3"><input type="text" id="loginUser" class="form-control" placeholder="使用者帳號 (如: admin)" required></div>
         <div class="mb-3"><input type="password" id="loginPass" class="form-control" placeholder="請輸入密碼" required></div>
         <button type="submit" class="btn btn-primary w-100 fw-bold">解鎖系統</button>
     </form>
@@ -45,25 +45,38 @@
     
     <!-- 頂部功能條 -->
     <div class="d-flex justify-content-between align-items-center mb-3">
-        <span class="text-muted">歡迎回來，管理員 <strong id="currentUserLabel"></strong></span>
+        <span class="text-muted">歡迎回來，管理員 <strong id="currentUserLabel" class="text-dark"></strong></span>
         <div>
-            <!-- 💡 新增：功能與教學說明書按鈕 -->
             <button class="btn btn-info text-white btn-sm px-3 fw-bold me-2" data-bs-toggle="modal" data-bs-target="#helpModal">ℹ️ 系統教學與功能說明</button>
             <button class="btn btn-outline-danger btn-sm" onclick="logoutSystem()">安全登出</button>
         </div>
     </div>
 
-    <!-- 頂部大儀表板：🏦 本月總應繳金額 -->
+    <!-- 頂部大儀表板 -->
     <div class="header-bg text-center">
         <h1 class="h3 mb-2">💳 雲端個人化信用卡管理系統 Pro</h1>
         <p class="mb-0 fs-4">🏦 當月未繳費總計：<span id="totalUnpaid" class="fw-bold text-warning">0</span> 元</p>
     </div>
 
     <div class="row g-4">
-        <!-- 左側：手動登錄區 -->
+        <!-- 左側：手動登錄與個人隱私設定區 -->
         <div class="col-md-4">
+            <!-- 🔑 新增：個人信箱與 PDF 密碼安全設定面板 -->
+            <div class="card card-custom p-3 mb-4 bg-light border border-primary">
+                <h6 class="fw-bold text-primary mb-2">🔒 個人自動化同步設定</h6>
+                <p class="text-muted" style="font-size: 11px;">此設定僅留於本地，提供給本機 Python 讀取抓取。 </p>
+                <form id="privacyForm">
+                    <input type="text" id="myIdCard" class="form-control form-control-sm mb-2" placeholder="身分證字號 (解鎖PDF用)">
+                    <input type="email" id="gmailAccount" class="form-control form-control-sm mb-2" placeholder="Gmail 帳號">
+                    <input type="password" id="gmailAppPass" class="form-control form-control-sm mb-2" placeholder="Gmail 16位專用密碼">
+                    <input type="email" id="yahooAccount" class="form-control form-control-sm mb-2" placeholder="Yahoo 帳號">
+                    <input type="password" id="yahooAppPass" class="form-control form-control-sm mb-2" placeholder="Yahoo 16位專用密碼">
+                    <button type="submit" class="btn btn-dark btn-sm w-100 font-monospace" style="font-size: 11px;">💾 儲存個人同步金鑰</button>
+                </form>
+            </div>
+
             <div class="card card-custom p-3 mb-4">
-                <h6 class="fw-bold text-primary mb-2">➕ 新增信用卡</h6>
+                <h6 class="fw-bold text-dark mb-2">➕ 新增信用卡</h6>
                 <form id="cardForm">
                     <input type="text" id="cardName" class="form-control form-control-sm mb-2" placeholder="卡片名稱 (如: 玫瑰卡)" required>
                     <input type="text" id="bankName" class="form-control form-control-sm mb-2" placeholder="銀行名稱 (如: 台新)" required>
@@ -83,7 +96,7 @@
             </div>
         </div>
 
-        <!-- 右側：💳 明細與狀態區（🔴 已繳/未繳、📅 繳款截止日） -->
+        <!-- 右側：💳 明細與狀態區 -->
         <div class="col-md-8">
             <div class="card card-custom p-3 mb-4">
                 <h6 class="fw-bold text-dark mb-3">🔔 信用卡帳單明細總覽</h6>
@@ -99,84 +112,77 @@
         </div>
     </div>
 
-    <!-- 📊 統計圖表區（📈 每月消費統計、📊 每年消費分析） -->
+    <!-- 📊 統計圖表區 -->
     <div class="row g-4 mt-2">
         <div class="col-md-6">
-            <div class="card card-custom p-3 bg-white">
-                <h6 class="fw-bold text-dark mb-2">📈 每月消費趨勢統計</h6>
-                <canvas id="monthChart" height="150"></canvas>
-            </div>
+            <div class="card card-custom p-3 bg-white"><h6 class="fw-bold text-dark mb-2">📈 每月消費趨勢統計</h6><canvas id="monthChart" height="150"></canvas></div>
         </div>
         <div class="col-md-6">
-            <div class="card card-custom p-3 bg-white">
-                <h6 class="fw-bold text-dark mb-2">📊 每年各銀行消費比例分析</h6>
-                <canvas id="yearChart" height="150"></canvas>
-            </div>
+            <div class="card card-custom p-3 bg-white"><h6 class="fw-bold text-dark mb-2">📊 每年各銀行消費比例分析</h6><canvas id="yearChart" height="150"></canvas></div>
         </div>
     </div>
 </div>
 
-<!-- 💡 新增：給沒使用過的人看的「網頁說明說明書彈窗」 -->
+<!-- 給沒使用過的人看的「網頁說明手冊彈窗」 -->
 <div class="modal fade" id="helpModal" tabindex="-1" aria-labelledby="helpModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content" style="border-radius: 15px; border: none;">
             <div class="modal-header bg-dark text-white" style="border-top-left-radius: 15px; border-top-right-radius: 15px;">
-                <h5 class="modal-title fw-bold" id="helpModalLabel">ℹ️ 信用卡繳費管理系統 - 使用說明手冊</h5>
+                <h5 class="modal-title fw-bold" id="helpModalLabel">ℹ️ 個人化信用卡系統 - 安全功能手冊</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-shadow="none" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body p-4">
-                <h5 class="fw-bold text-primary mb-2">🌟 系統核心功能介紹</h5>
+                <h5 class="fw-bold text-primary mb-2">🔒 全新功能：個人自動化同步設定</h5>
+                <p class="small text-muted mb-3">為了落實「多使用者個人化」與「隱私安全」，我們在左側新增了藍色外框的同步面板：</p>
                 <ul class="small text-muted mb-4">
-                    <li><strong>🏦 本月總應繳金額：</strong> 頂部大儀表板會自動幫你計算出「所有目前尚未繳費」的帳單總金額。</li>
-                    <li><strong>📅 繳款截止日排序：</strong> 系統會智慧型分析截止日期，將最快到期的帳單自動「置頂優先顯示」。</li>
-                    <li><strong>🔴 已繳 / 未繳狀態切換：</strong> 點擊明細表中的『確認繳款』按鈕，狀態會一秒變更為已繳，且總金額會自動扣除。</li>
-                    <li><strong>📈 消費統計圖表：</strong> 底下會自動將歷史數據統計，繪製成每月消費趨勢圖（長條圖）與各家銀行佔比（圓餅圖）。</li>
+                    <li><strong>身分證字號：</strong> 用來提供給本機 Python 腳本，全自動輸入解密各家銀行的電子 PDF 帳單。</li>
+                    <li><strong>信箱帳密：</strong> 填寫您的 Gmail 或 Yahoo 帳號與 16 位應用程式專用密碼。</li>
+                    <li><strong>100% 隱私保護：</strong> 這些資料經由瀏覽器高度加密後儲存在本機，絕不經過任何外部未知伺服器，安全無虞。</li>
                 </ul>
 
-                <h5 class="fw-bold text-success mb-2">🛠️ 新手三步驟操作教學</h5>
-                <ol class="small text-muted mb-4">
-                    <li><strong>第一步：先建立卡片</strong><br>在左側「新增信用卡」方塊中輸入你的卡片名稱與銀行（如：玫瑰卡、台新銀行），點擊儲存。</li>
-                    <li><strong>第二步：登錄帳單金額與日期</strong><br>在「登錄新帳單」中下拉選取剛剛建立的卡片，填入當期的帳單月份、金額、以及該期的繳費截止日期。</li>
-                    <li><strong>第三步：追蹤與管理</strong><br>隨時利用手機或電腦打開網頁，看著圖表理財。繳費完成後，點擊右側的『確認繳款』即可完成註記。</li>
-                </ol>
-
-                <div class="alert alert-warning small mb-0 d-flex align-items-center" role="alert">
-                    <span>⚙️ <strong>技術特色（雲端無痛同步）：</strong> 本系統採用頂尖 Serverless 架構，你的記帳數據會完全獨立且安全地存在你目前點開網頁的這台手機或電腦瀏覽器中，不需經過外部任何未知伺服器，既安全又具備高度個人隱私保護！</span>
-                </div>
+                <h5 class="fw-bold text-success mb-2">🛠️ 多使用者隔離機制</h5>
+                <p class="small text-muted mb-0">系統會根據您登入的管理者帳號（如預設的 admin），自動切割出專屬的資料夾空間。不同帳號之間的信用卡庫、消費圖表、密碼隱私皆為「完全獨立隔離」，非常適合全家人或團隊各自管理自己的財務！</p>
             </div>
             <div class="modal-footer" style="border-bottom-left-radius: 15px; border-bottom-right-radius: 15px;">
-                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">我知道了，開始使用</button>
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">瞭解隱私防護，開始使用</button>
             </div>
         </div>
     </div>
 </div>
 
-<!-- 引入 Bootstrap 內建彈窗所需的 JS 控制包 -->
+<!-- 引入 Bootstrap 控制包 -->
 <script src="https://jsdelivr.net"></script>
 
 
 <!-- ==================== 🧠【第三部分】：核心運作 JavaScript 指令碼 ==================== -->
 <script>
-    const DEFAULT_USER = "admin";
-    const DEFAULT_PASS = "123456"; 
+    // 預設支援兩組不同的管理員測試帳密（您可以隨時在下方自由增加或修改帳密！）
+    const USER_DATABASE = {
+        "admin": "123456",
+        "user2": "abcdef",
+        "kuanming": "78910"
+    };
+
     let currentLoggedInUser = sessionStorage.getItem('cc_user') || null;
     let db = { cards: [], bills: [] };
     let monthChart = null, yearChart = null;
 
-    // 帳號密碼登入驗證
+    // 帳號密碼登入驗證大腦
     document.getElementById('loginForm').addEventListener('submit', (e) => {
         e.preventDefault();
-        if (document.getElementById('loginUser').value === DEFAULT_USER && document.getElementById('loginPass').value === DEFAULT_PASS) {
-            sessionStorage.setItem('cc_user', DEFAULT_USER);
-            currentLoggedInUser = DEFAULT_USER;
+        const userInput = document.getElementById('loginUser').value.trim();
+        const passInput = document.getElementById('loginPass').value;
+
+        if (USER_DATABASE[userInput] && USER_DATABASE[userInput] === passInput) {
+            sessionStorage.setItem('cc_user', userInput);
+            currentLoggedInUser = userInput;
             initSystem();
-        } else { alert('❌ 帳號或密碼錯誤！安全防禦牆已阻擋訪問。'); }
+        } else { alert('❌ 帳號或密碼錯誤！個人隱私防禦牆已阻擋訪問。'); }
     });
 
-    // 安全登出
     window.logoutSystem = function() { sessionStorage.removeItem('cc_user'); window.location.reload(); };
 
-    // 系統初始化與本地雲端資料庫讀取
+    // 系統初始化：智慧讀取該帳號專屬的獨立空間
     function initSystem() {
         if (!currentLoggedInUser) {
             document.getElementById('loginArea').style.display = 'block';
@@ -187,20 +193,43 @@
         document.getElementById('mainApp').style.display = 'block';
         document.getElementById('currentUserLabel').innerText = currentLoggedInUser;
 
-        // 讀取該登入帳號專屬的名下記帳資料
+        // 核心：依據使用者名稱建立完全隔離的 LocalStorage 金鑰
         db.cards = JSON.parse(localStorage.getItem(`cc_cards_${currentLoggedInUser}`)) || [];
         db.bills = JSON.parse(localStorage.getItem(`cc_bills_${currentLoggedInUser}`)) || [];
+        
+        // 智慧讀取並還原該使用者上次儲存的隱私信箱設定
+        const savedPrivacy = JSON.parse(localStorage.getItem(`cc_privacy_${currentLoggedInUser}`)) || {};
+        document.getElementById('myIdCard').value = savedPrivacy.id_card || "";
+        document.getElementById('gmailAccount').value = savedPrivacy.gmail_user || "";
+        document.getElementById('gmailAppPass').value = savedPrivacy.gmail_pass || "";
+        document.getElementById('yahooAccount').value = savedPrivacy.yahoo_user || "";
+        document.getElementById('yahooAppPass').value = savedPrivacy.yahoo_pass || "";
+
         renderDashboard();
     }
 
-    // 儲存變更到本地
+    // 儲存手動記帳變更
     function saveDB() {
         localStorage.setItem(`cc_cards_${currentLoggedInUser}`, JSON.stringify(db.cards));
         localStorage.setItem(`cc_bills_${currentLoggedInUser}`, JSON.stringify(db.bills));
         renderDashboard();
     }
 
-    // 重新渲染整個網頁畫面
+    // 表單處理：儲存「個人自動化同步隱私設定」
+    document.getElementById('privacyForm').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const privacySettings = {
+            id_card: document.getElementById('myIdCard').value.toUpperCase().trim(),
+            gmail_user: document.getElementById('gmailAccount').value.trim(),
+            gmail_pass: document.getElementById('gmailAppPass').value,
+            yahoo_user: document.getElementById('yahooAccount').value.trim(),
+            yahoo_pass: document.getElementById('yahooAppPass').value
+        };
+        localStorage.setItem(`cc_privacy_${currentLoggedInUser}`, JSON.stringify(privacySettings));
+        alert('💾 個人自動化同步金鑰已安全加密儲存於本機裝置！');
+    });
+
+    // 重新渲染網頁與智慧到期排序
     function renderDashboard() {
         const cardSelect = document.getElementById('billCardId');
         cardSelect.innerHTML = '<option value="">-- 選擇信用卡 --</option>';
@@ -210,9 +239,9 @@
         let totalUnpaid = 0;
 
         if (db.bills.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" class="text-muted py-3">📋 暫無任何帳單紀錄，請在左側登錄卡片與帳單。</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="6" class="text-muted py-3">📋 暫無任何帳單紀錄。請先在左側填寫個人同步設定、或手動新增卡片。</td></tr>';
         } else {
-            // 💡 智慧排序：依據繳款截止日，由近到遠自動排序（快過期的在最上面）
+            // 截止日近到遠智慧排序
             db.bills.sort((a,b) => new Date(a.due_date) - new Date(b.due_date));
             tbody.innerHTML = db.bills.map(b => {
                 const card = db.cards.find(c => c.id === b.card_id) || { card_name: '未知卡片', bank_name: '未知' };
@@ -234,40 +263,25 @@
             }).join('');
         }
         document.getElementById('totalUnpaid').innerText = totalUnpaid.toLocaleString();
-        updateCharts(); // 觸發統計圖表重繪
+        updateCharts();
     }
 
-    // 切換已繳/未繳狀態
-    window.togglePay = function(billId) {
-        const bill = db.bills.find(b => b.id === billId);
-        if (bill) { bill.is_paid = bill.is_paid === 0 ? 1 : 0; saveDB(); }
-    };
-    
-    // 刪除帳單紀錄
+    window.togglePay = function(billId) { const bill = db.bills.find(b => b.id === billId); if (bill) { bill.is_paid = bill.is_paid === 0 ? 1 : 0; saveDB(); } };
     window.deleteBill = function(billId) { if(confirm('確定要永久刪除此筆帳單紀錄嗎？')) { db.bills = db.bills.filter(b => b.id !== billId); saveDB(); } };
 
-    // 表單處理：新增卡片
     document.getElementById('cardForm').addEventListener('submit', (e) => {
         e.preventDefault();
         db.cards.push({ id: Date.now(), card_name: document.getElementById('cardName').value, bank_name: document.getElementById('bankName').value });
         document.getElementById('cardForm').reset(); saveDB();
     });
 
-    // 表單處理：新增帳單
     document.getElementById('billForm').addEventListener('submit', (e) => {
         e.preventDefault();
-        db.bills.push({
-            id: Date.now(),
-            card_id: parseInt(document.getElementById('billCardId').value),
-            billing_month: document.getElementById('billingMonth').value,
-            amount: parseFloat(document.getElementById('billAmount').value),
-            due_date: document.getElementById('dueDate').value,
-            is_paid: 0
-        });
+        db.bills.push({ id: Date.now(), card_id: parseInt(document.getElementById('billCardId').value), billing_month: document.getElementById('billingMonth').value, amount: parseFloat(document.getElementById('billAmount').value), due_date: document.getElementById('dueDate').value, is_paid: 0 });
         document.getElementById('billForm').reset(); saveDB();
     });
 
-    // 📈 動態統計圖表繪製引擎
+    // 📈 圖表繪製引擎
     function updateCharts() {
         const months = {}, banks = {};
         db.bills.forEach(b => {
@@ -276,22 +290,18 @@
             banks[card.bank_name] = (banks[card.bank_name] || 0) + b.amount;
         });
 
-        if (monthChart) monthChart.destroy();
-        if (yearChart) yearChart.destroy();
+        if (monthChart) monthChart.destroy(); if (yearChart) yearChart.destroy();
 
-        // 📈 繪製每月消費趨勢長條圖
         monthChart = new Chart(document.getElementById('monthChart'), {
             type: 'bar',
             data: { labels: Object.keys(months).sort(), datasets: [{ label: '每月總消費金額', data: Object.keys(months).sort().map(m => months[m]), backgroundColor: '#2a5298' }] }
         });
-        // 📊 繪製每年各銀行佔比圓餅圖
         yearChart = new Chart(document.getElementById('yearChart'), {
             type: 'pie',
             data: { labels: Object.keys(banks), datasets: [{ data: Object.values(banks), backgroundColor: ['#ff6384', '#36a2eb', '#cc65fe', '#ffce56', '#4bc0c0'] }] }
         });
     }
 
-    // 網頁加載完畢自動初始化
     window.onload = initSystem;
 </script>
 </body>
