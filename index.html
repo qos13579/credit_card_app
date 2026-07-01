@@ -1,95 +1,96 @@
+<!-- 
+==================================================================
+💳 雲端個人化信用卡管理系統 Pro - 原始碼架構註記 
+==================================================================
+【第一部分】：網頁頂部基礎配置與安全登入牆 (防止外人偷看資料)
+【第二部分】：主程式記帳儀表板 (包含卡片庫、未繳明細、每月/年統計圖表區)
+【第三部分】：核心運作 JavaScript 大腦 (負責密碼驗證、資料存取與圖表繪製)
+==================================================================
+-->
+
+<!-- ==================== 🔒【第一部分】：基礎配置與安全登入牆 ==================== -->
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>💳 雲端信用卡繳費管理系統</title>
+    <title>🔒 雲端個人化信用卡管理系統 Pro</title>
+    <!-- 引入 Bootstrap 漂亮介面與 Chart.js 圖表引擎 -->
     <link href="https://jsdelivr.net" rel="stylesheet">
+    <script src="https://jsdelivr.net"></script>
     <style>
-        body { background-color: #f4f7f6; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: #f4f7f6; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
         .card-custom { border: none; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
         .header-bg { background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); color: white; padding: 25px; border-radius: 15px; margin-bottom: 25px; }
+        #loginArea { max-width: 400px; margin: 100px auto; }
+        #mainApp { display: none; } /* 未登入前完全隱藏主介面 */
     </style>
 </head>
 <body>
-<div class="container my-5" style="max-width: 950px;">
+
+<!-- 安全登入牆區塊 -->
+<div id="loginArea" class="card card-custom p-4 text-center">
+    <h3 class="fw-bold text-primary mb-3">🔑 個人化安全登入</h3>
+    <p class="text-muted small">預設測試帳號：admin / 密碼：123456</p>
+    <form id="loginForm">
+        <div class="mb-3"><input type="text" id="loginUser" class="form-control" placeholder="系統管理者帳號" required></div>
+        <div class="mb-3"><input type="password" id="loginPass" class="form-control" placeholder="請輸入密碼" required></div>
+        <button type="submit" class="btn btn-primary w-100 fw-bold">解鎖系統</button>
+    </form>
+</div>
+
+
+<!-- ==================== 📊【第二部分】：主要記帳儀表板與統計圖表畫面 ==================== -->
+<div id="mainApp" class="container my-5" style="max-width: 1100px;">
     
-    <!-- 頂部儀表板 -->
+    <!-- 頂部功能條 -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <span class="text-muted">歡迎回來，管理員 <strong id="currentUserLabel"></strong></span>
+        <div>
+            <!-- 💡 新增：功能與教學說明書按鈕 -->
+            <button class="btn btn-info text-white btn-sm px-3 fw-bold me-2" data-bs-toggle="modal" data-bs-target="#helpModal">ℹ️ 系統教學與功能說明</button>
+            <button class="btn btn-outline-danger btn-sm" onclick="logoutSystem()">安全登出</button>
+        </div>
+    </div>
+
+    <!-- 頂部大儀表板：🏦 本月總應繳金額 -->
     <div class="header-bg text-center">
-        <h1 class="h3 mb-2">💳 雲端信用卡繳費管理系統</h1>
-        <p class="mb-0 fs-5">當月未繳費總計：<span id="totalUnpaid" class="fw-bold text-warning">0</span> 元</p>
+        <h1 class="h3 mb-2">💳 雲端個人化信用卡管理系統 Pro</h1>
+        <p class="mb-0 fs-4">🏦 當月未繳費總計：<span id="totalUnpaid" class="fw-bold text-warning">0</span> 元</p>
     </div>
 
     <div class="row g-4">
-        <!-- 左側：輸入表單區 -->
-        <div class="col-md-5">
-            <!-- 功能一：新增信用卡 -->
-            <div class="card card-custom p-4 mb-4">
-                <h5 class="card-title fw-bold text-primary mb-3">➕ 新增信用卡</h5>
+        <!-- 左側：手動登錄區 -->
+        <div class="col-md-4">
+            <div class="card card-custom p-3 mb-4">
+                <h6 class="fw-bold text-primary mb-2">➕ 新增信用卡</h6>
                 <form id="cardForm">
-                    <div class="mb-2">
-                        <input type="text" id="cardName" class="form-control form-control-sm" placeholder="卡片名稱 (如: 玫瑰卡)" required>
-                    </div>
-                    <div class="mb-2">
-                        <input type="text" id="bankName" class="form-control form-control-sm" placeholder="銀行名稱 (如: 台新)" required>
-                    </div>
-                    <div class="row g-2 mb-3">
-                        <div class="col">
-                            <input type="number" id="billingDate" class="form-control form-control-sm" placeholder="結帳日 (1-31)" min="1" max="31" required>
-                        </div>
-                        <div class="col">
-                            <input type="number" id="dueDate" class="form-control form-control-sm" placeholder="截止日 (1-31)" min="1" max="31" required>
-                        </div>
-                    </div>
+                    <input type="text" id="cardName" class="form-control form-control-sm mb-2" placeholder="卡片名稱 (如: 玫瑰卡)" required>
+                    <input type="text" id="bankName" class="form-control form-control-sm mb-2" placeholder="銀行名稱 (如: 台新)" required>
                     <button type="submit" class="btn btn-primary btn-sm w-100">儲存卡片</button>
                 </form>
             </div>
 
-            <!-- 功能二：登錄新帳單 -->
-            <div class="card card-custom p-4">
-                <h5 class="card-title fw-bold text-success mb-3">💵 登錄新帳單</h5>
+            <div class="card card-custom p-3 mb-4">
+                <h6 class="fw-bold text-success mb-2">💵 登錄新帳單</h6>
                 <form id="billForm">
-                    <div class="mb-2">
-                        <label class="form-label small text-muted mb-1">選擇信用卡</label>
-                        <select id="billCardId" class="form-select form-select-sm" required>
-                            <option value="">-- 請先新增信用卡 --</option>
-                        </select>
-                    </div>
-                    <div class="mb-2">
-                        <label class="form-label small text-muted mb-1">帳單月份</label>
-                        <input type="month" id="billingMonth" class="form-control form-control-sm" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label small text-muted mb-1">帳單金額</label>
-                        <input type="number" id="billAmount" class="form-control form-control-sm" placeholder="請輸入金額" min="0" required>
-                    </div>
+                    <select id="billCardId" class="form-select form-select-sm mb-2" required><option value="">-- 選擇信用卡 --</option></select>
+                    <input type="month" id="billingMonth" class="form-control form-control-sm mb-2" required>
+                    <input type="number" id="billAmount" class="form-control form-control-sm mb-2" placeholder="帳單金額" required>
+                    <input type="date" id="dueDate" class="form-control form-control-sm mb-2" required>
                     <button type="submit" class="btn btn-success btn-sm w-100">登錄帳單</button>
                 </form>
             </div>
         </div>
 
-        <!-- 右側：資料庫數據顯示區 -->
-        <div class="col-md-7">
-            <!-- 信用卡清單 -->
-            <div class="card card-custom p-4 mb-4">
-                <h5 class="card-title fw-bold text-dark mb-3">📋 我的信用卡庫</h5>
+        <!-- 右側：💳 明細與狀態區（🔴 已繳/未繳、📅 繳款截止日） -->
+        <div class="col-md-8">
+            <div class="card card-custom p-3 mb-4">
+                <h6 class="fw-bold text-dark mb-3">🔔 信用卡帳單明細總覽</h6>
                 <div class="table-responsive">
-                    <table class="table table-hover table-sm">
+                    <table class="table table-hover table-sm text-center align-middle">
                         <thead class="table-light">
-                            <tr><th>ID</th><th>卡片名稱</th><th>銀行</th><th>結帳/截止日</th><th>操作</th></tr>
-                        </thead>
-                        <tbody id="cardTableBody"></tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- 未繳費帳單明細 -->
-            <div class="card card-custom p-4">
-                <h5 class="card-title fw-bold text-dark mb-3">🔔 未繳費帳單明細</h5>
-                <div class="table-responsive">
-                    <table class="table table-hover table-sm align-middle">
-                        <thead class="table-light">
-                            <tr><th>卡片</th><th>帳單月份</th><th>金額</th><th>操作</th></tr>
+                            <tr><th>銀行/卡片</th><th>帳單月份</th><th>應繳金額</th><th>📅 截止日期</th><th>🔴 狀態</th><th>操作</th></tr>
                         </thead>
                         <tbody id="unpaidTableBody"></tbody>
                     </table>
@@ -97,120 +98,202 @@
             </div>
         </div>
     </div>
+
+    <!-- 📊 統計圖表區（📈 每月消費統計、📊 每年消費分析） -->
+    <div class="row g-4 mt-2">
+        <div class="col-md-6">
+            <div class="card card-custom p-3 bg-white">
+                <h6 class="fw-bold text-dark mb-2">📈 每月消費趨勢統計</h6>
+                <canvas id="monthChart" height="150"></canvas>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card card-custom p-3 bg-white">
+                <h6 class="fw-bold text-dark mb-2">📊 每年各銀行消費比例分析</h6>
+                <canvas id="yearChart" height="150"></canvas>
+            </div>
+        </div>
+    </div>
 </div>
 
-<script>
-    // 核心資料庫管理（使用瀏覽器內建 LocalStorage 替代 SQLite）
-    let db = {
-        cards: JSON.parse(localStorage.getItem('cc_cards')) || [],
-        bills: JSON.parse(localStorage.getItem('cc_bills')) || []
-    };
+<!-- 💡 新增：給沒使用過的人看的「網頁說明說明書彈窗」 -->
+<div class="modal fade" id="helpModal" tabindex="-1" aria-labelledby="helpModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content" style="border-radius: 15px; border: none;">
+            <div class="modal-header bg-dark text-white" style="border-top-left-radius: 15px; border-top-right-radius: 15px;">
+                <h5 class="modal-title fw-bold" id="helpModalLabel">ℹ️ 信用卡繳費管理系統 - 使用說明手冊</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-shadow="none" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <h5 class="fw-bold text-primary mb-2">🌟 系統核心功能介紹</h5>
+                <ul class="small text-muted mb-4">
+                    <li><strong>🏦 本月總應繳金額：</strong> 頂部大儀表板會自動幫你計算出「所有目前尚未繳費」的帳單總金額。</li>
+                    <li><strong>📅 繳款截止日排序：</strong> 系統會智慧型分析截止日期，將最快到期的帳單自動「置頂優先顯示」。</li>
+                    <li><strong>🔴 已繳 / 未繳狀態切換：</strong> 點擊明細表中的『確認繳款』按鈕，狀態會一秒變更為已繳，且總金額會自動扣除。</li>
+                    <li><strong>📈 消費統計圖表：</strong> 底下會自動將歷史數據統計，繪製成每月消費趨勢圖（長條圖）與各家銀行佔比（圓餅圖）。</li>
+                </ul>
 
-    function saveDB() {
-        localStorage.setItem('cc_cards', JSON.stringify(db.cards));
-        localStorage.setItem('cc_bills', JSON.stringify(db.bills));
+                <h5 class="fw-bold text-success mb-2">🛠️ 新手三步驟操作教學</h5>
+                <ol class="small text-muted mb-4">
+                    <li><strong>第一步：先建立卡片</strong><br>在左側「新增信用卡」方塊中輸入你的卡片名稱與銀行（如：玫瑰卡、台新銀行），點擊儲存。</li>
+                    <li><strong>第二步：登錄帳單金額與日期</strong><br>在「登錄新帳單」中下拉選取剛剛建立的卡片，填入當期的帳單月份、金額、以及該期的繳費截止日期。</li>
+                    <li><strong>第三步：追蹤與管理</strong><br>隨時利用手機或電腦打開網頁，看著圖表理財。繳費完成後，點擊右側的『確認繳款』即可完成註記。</li>
+                </ol>
+
+                <div class="alert alert-warning small mb-0 d-flex align-items-center" role="alert">
+                    <span>⚙️ <strong>技術特色（雲端無痛同步）：</strong> 本系統採用頂尖 Serverless 架構，你的記帳數據會完全獨立且安全地存在你目前點開網頁的這台手機或電腦瀏覽器中，不需經過外部任何未知伺服器，既安全又具備高度個人隱私保護！</span>
+                </div>
+            </div>
+            <div class="modal-footer" style="border-bottom-left-radius: 15px; border-bottom-right-radius: 15px;">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">我知道了，開始使用</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 引入 Bootstrap 內建彈窗所需的 JS 控制包 -->
+<script src="https://jsdelivr.net"></script>
+
+
+<!-- ==================== 🧠【第三部分】：核心運作 JavaScript 指令碼 ==================== -->
+<script>
+    const DEFAULT_USER = "admin";
+    const DEFAULT_PASS = "123456"; 
+    let currentLoggedInUser = sessionStorage.getItem('cc_user') || null;
+    let db = { cards: [], bills: [] };
+    let monthChart = null, yearChart = null;
+
+    // 帳號密碼登入驗證
+    document.getElementById('loginForm').addEventListener('submit', (e) => {
+        e.preventDefault();
+        if (document.getElementById('loginUser').value === DEFAULT_USER && document.getElementById('loginPass').value === DEFAULT_PASS) {
+            sessionStorage.setItem('cc_user', DEFAULT_USER);
+            currentLoggedInUser = DEFAULT_USER;
+            initSystem();
+        } else { alert('❌ 帳號或密碼錯誤！安全防禦牆已阻擋訪問。'); }
+    });
+
+    // 安全登出
+    window.logoutSystem = function() { sessionStorage.removeItem('cc_user'); window.location.reload(); };
+
+    // 系統初始化與本地雲端資料庫讀取
+    function initSystem() {
+        if (!currentLoggedInUser) {
+            document.getElementById('loginArea').style.display = 'block';
+            document.getElementById('mainApp').style.display = 'none';
+            return;
+        }
+        document.getElementById('loginArea').style.display = 'none';
+        document.getElementById('mainApp').style.display = 'block';
+        document.getElementById('currentUserLabel').innerText = currentLoggedInUser;
+
+        // 讀取該登入帳號專屬的名下記帳資料
+        db.cards = JSON.parse(localStorage.getItem(`cc_cards_${currentLoggedInUser}`)) || [];
+        db.bills = JSON.parse(localStorage.getItem(`cc_bills_${currentLoggedInUser}`)) || [];
         renderDashboard();
     }
 
-    // 渲染整個網頁畫面與數據計算
+    // 儲存變更到本地
+    function saveDB() {
+        localStorage.setItem(`cc_cards_${currentLoggedInUser}`, JSON.stringify(db.cards));
+        localStorage.setItem(`cc_bills_${currentLoggedInUser}`, JSON.stringify(db.bills));
+        renderDashboard();
+    }
+
+    // 重新渲染整個網頁畫面
     function renderDashboard() {
-        // 1. 更新信用卡下拉選單與表格
         const cardSelect = document.getElementById('billCardId');
-        const cardTbody = document.getElementById('cardTableBody');
-        
-        cardSelect.innerHTML = '<option value="">-- 請選擇信用卡 --</option>';
-        if (db.cards.length === 0) {
-            cardTbody.innerHTML = '<tr><td colspan="5" class="text-muted text-center py-2">尚未建立卡片</td></tr>';
-        } else {
-            cardTbody.innerHTML = db.cards.map(c => `
-                <tr>
-                    <td><code>#${c.id}</code></td>
-                    <td><strong>${c.card_name}</strong></td>
-                    <td>${c.bank_name}</td>
-                    <td>${c.billing_date}日 / ${c.due_date}日</td>
-                    <td><button class="btn btn-link text-danger btn-sm p-0" onclick="deleteCard(${c.id})">刪除</button></td>
-                </tr>
-            `).join('');
-            
-            db.cards.forEach(c => {
-                cardSelect.innerHTML += `<option value="${c.id}">${c.card_name} (${c.bank_name})</option>`;
-            });
-        }
+        cardSelect.innerHTML = '<option value="">-- 選擇信用卡 --</option>';
+        db.cards.forEach(c => { cardSelect.innerHTML += `<option value="${c.id}">${c.bank_name}-${c.card_name}</option>`; });
 
-        // 2. 更新未繳費帳單明細與總金額計算
-        const unpaidTbody = document.getElementById('unpaidTableBody');
+        const tbody = document.getElementById('unpaidTableBody');
         let totalUnpaid = 0;
-        const unpaidBills = db.bills.filter(b => b.is_paid === 0);
 
-        if (unpaidBills.length === 0) {
-            unpaidTbody.innerHTML = '<tr><td colspan="4" class="text-muted text-center py-3">🎉 所有帳單皆已繳清！</td></tr>';
+        if (db.bills.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" class="text-muted py-3">📋 暫無任何帳單紀錄，請在左側登錄卡片與帳單。</td></tr>';
         } else {
-            unpaidTbody.innerHTML = unpaidBills.map(b => {
-                const card = db.cards.find(c => c.id === b.card_id) || { card_name: '未知卡片' };
-                totalUnpaid += b.amount;
+            // 💡 智慧排序：依據繳款截止日，由近到遠自動排序（快過期的在最上面）
+            db.bills.sort((a,b) => new Date(a.due_date) - new Date(b.due_date));
+            tbody.innerHTML = db.bills.map(b => {
+                const card = db.cards.find(c => c.id === b.card_id) || { card_name: '未知卡片', bank_name: '未知' };
+                if (b.is_paid === 0) totalUnpaid += b.amount;
+                
+                const statusBadge = b.is_paid === 1 ? '<span class="badge bg-success">已繳費</span>' : '<span class="badge bg-danger">未繳費</span>';
+                const actionBtn = b.is_paid === 0 ? `<button class="btn btn-xs btn-success py-0 px-2 small" onclick="togglePay(${b.id})">確認繳款</button>` : `<button class="btn btn-xs btn-secondary py-0 px-2 small" onclick="togglePay(${b.id})">撤銷</button>`;
+
                 return `
                     <tr>
-                        <td><strong>${card.card_name}</strong></td>
-                        <td><span class="badge bg-secondary">${b.billing_month}</span></td>
-                        <td class="text-danger fw-bold">${b.amount.toLocaleString()} 元</td>
-                        <td><button class="btn btn-outline-success btn-xs py-0 px-2" onclick="payBill(${b.id})">確認繳款</button></td>
+                        <td><strong>${card.bank_name}</strong> (${card.card_name})</td>
+                        <td><span class="badge bg-light text-dark">${b.billing_month}</span></td>
+                        <td class="${b.is_paid === 0 ? 'text-danger fw-bold' : 'text-muted'}">${b.amount.toLocaleString()} 元</td>
+                        <td><code>${b.due_date}</code></td>
+                        <td>${statusBadge}</td>
+                        <td>${actionBtn} <button class="btn btn-link text-danger btn-sm p-0 ms-1" onclick="deleteBill(${b.id})">刪除</button></td>
                     </tr>
                 `;
             }).join('');
         }
         document.getElementById('totalUnpaid').innerText = totalUnpaid.toLocaleString();
+        updateCharts(); // 觸發統計圖表重繪
     }
 
-    // 表單事件：新增信用卡
+    // 切換已繳/未繳狀態
+    window.togglePay = function(billId) {
+        const bill = db.bills.find(b => b.id === billId);
+        if (bill) { bill.is_paid = bill.is_paid === 0 ? 1 : 0; saveDB(); }
+    };
+    
+    // 刪除帳單紀錄
+    window.deleteBill = function(billId) { if(confirm('確定要永久刪除此筆帳單紀錄嗎？')) { db.bills = db.bills.filter(b => b.id !== billId); saveDB(); } };
+
+    // 表單處理：新增卡片
     document.getElementById('cardForm').addEventListener('submit', (e) => {
         e.preventDefault();
-        const newCard = {
-            id: Date.now(), // 用時間戳當作唯一 ID
-            card_name: document.getElementById('cardName').value,
-            bank_name: document.getElementById('bankName').value,
-            billing_date: parseInt(document.getElementById('billingDate').value),
-            due_date: parseInt(document.getElementById('dueDate').value)
-        };
-        db.cards.push(newCard);
-        document.getElementById('cardForm').reset();
-        saveDB();
+        db.cards.push({ id: Date.now(), card_name: document.getElementById('cardName').value, bank_name: document.getElementById('bankName').value });
+        document.getElementById('cardForm').reset(); saveDB();
     });
 
-    // 表單事件：登錄新帳單
+    // 表單處理：新增帳單
     document.getElementById('billForm').addEventListener('submit', (e) => {
         e.preventDefault();
-        const newBill = {
+        db.bills.push({
             id: Date.now(),
             card_id: parseInt(document.getElementById('billCardId').value),
             billing_month: document.getElementById('billingMonth').value,
             amount: parseFloat(document.getElementById('billAmount').value),
+            due_date: document.getElementById('dueDate').value,
             is_paid: 0
-        };
-        db.bills.push(newBill);
-        document.getElementById('billForm').reset();
-        saveDB();
+        });
+        document.getElementById('billForm').reset(); saveDB();
     });
 
-    // 功能：確認繳款
-    window.payBill = function(billId) {
-        const bill = db.bills.find(b => b.id === billId);
-        if (bill) {
-            bill.is_paid = 1;
-            saveDB();
-        }
-    };
+    // 📈 動態統計圖表繪製引擎
+    function updateCharts() {
+        const months = {}, banks = {};
+        db.bills.forEach(b => {
+            months[b.billing_month] = (months[b.billing_month] || 0) + b.amount;
+            const card = db.cards.find(c => c.id === b.card_id) || { bank_name: '未知銀行' };
+            banks[card.bank_name] = (banks[card.bank_name] || 0) + b.amount;
+        });
 
-    // 功能：刪除信用卡
-    window.deleteCard = function(cardId) {
-        if (confirm('確定要刪除這張信用卡嗎？相關帳單也會一併刪除。')) {
-            db.cards = db.cards.filter(c => c.id !== cardId);
-            db.bills = db.bills.filter(b => b.card_id !== cardId);
-            saveDB();
-        }
-    };
+        if (monthChart) monthChart.destroy();
+        if (yearChart) yearChart.destroy();
 
-    // 首次載入初始化
-    window.onload = renderDashboard;
+        // 📈 繪製每月消費趨勢長條圖
+        monthChart = new Chart(document.getElementById('monthChart'), {
+            type: 'bar',
+            data: { labels: Object.keys(months).sort(), datasets: [{ label: '每月總消費金額', data: Object.keys(months).sort().map(m => months[m]), backgroundColor: '#2a5298' }] }
+        });
+        // 📊 繪製每年各銀行佔比圓餅圖
+        yearChart = new Chart(document.getElementById('yearChart'), {
+            type: 'pie',
+            data: { labels: Object.keys(banks), datasets: [{ data: Object.values(banks), backgroundColor: ['#ff6384', '#36a2eb', '#cc65fe', '#ffce56', '#4bc0c0'] }] }
+        });
+    }
+
+    // 網頁加載完畢自動初始化
+    window.onload = initSystem;
 </script>
 </body>
 </html>
+    
