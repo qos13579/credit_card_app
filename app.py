@@ -1,6 +1,7 @@
 import os
 import sqlite3
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, render_template
+
 
 app = Flask(__name__)
 
@@ -39,14 +40,10 @@ def init_db():
     conn.close()
 
 
-@app.route("/")
+@app.route('/')
 def home():
-    return jsonify(
-        {
-            "status": "success",
-            "message": "信用卡繳費管理系統功能升級版已就緒！",
-        }
-    )
+    return render_template('index.html')
+
 
 
 # ==================== 功能一：新增信用卡 ====================
