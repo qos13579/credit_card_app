@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>💳 信用卡繳費管理系統</title>
+    <link href="https://jsdelivr.net" rel="stylesheet">
+    <style>
+        body { background-color: #f4f7f6; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .card-custom { border: none; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        .header-bg { background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); color: white; padding: 20px; border-radius: 15px; margin-bottom: 25px; }
+    </style>
+</head>
+<body>
+<div class="container my-5" style="max-width: 900px;">
+    <!-- 標題與未繳統計 -->
+    <div class="header-bg text-center">
+        <h1 class="h3 mb-2">💳 信用卡繳費管理系統</h1>
+        <p class="mb-0 fs-5">當月未繳費總計：<span id="totalUnpaid" class="fw-bold text-warning">0</span> 元</p>
+    </div>
+
+    <div class="row g-4">
+        <!-- 表單區 -->
+        <div class="col-md-5">
+            <!-- 功能一：新增信用卡 -->
+            <div class="card card-custom p-4 mb-4">
+                <h5 class="card-title fw-bold text-primary mb-3">➕ 新增信用卡</h5>
+                <form id="cardForm">
+                    <div class="mb-2"><input type="text" id="cardName" class="form-control form-control-sm" placeholder="卡片名稱 (如: 玫瑰卡)" required></div>
+                    <div class="mb-2"><input type="text" id="bankName" class="form-control form-control-sm" placeholder="銀行名稱 (如: 台新)" required></div>
+                    <div class="row g-2 mb-3">
+                        <div class="col"><input type="number" id="billingDate" class="form-control form-control-sm" placeholder="結帳日 (1-31)"></div>
+                        <div class="col"><input type="number" id="dueDate" class="form-control form-control-sm" placeholder="截止日 (1-31)"></div>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-sm w-100">儲存卡片</button>
+                </form>
+            </div>
+
+            <!-- 功能二：新增帳單 -->
+            <div class="card card-custom p-4">
+                <h5 class="card-title fw-bold text-success mb-3">💵 登錄新帳單</h5>
+                <form id="billForm">
+                    <div class="mb-2"><input type="number" id="billCardId" class="form-control form-control-sm" placeholder="卡片編號 ID" required></div>
+                    <div class="mb-2"><input type="month" id="billingMonth" class="form-control form-control-sm" required></div>
+                    <div class="mb-3"><input type="number" id="billAmount" class="form-control form-control-sm" placeholder="帳單金額" required></div>
+                    <button type="submit" class="btn btn-success btn-sm w-100">登錄帳單</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- 顯示資料區 -->
+        <div class="col-md-7">
+            <div class="card card-custom p-4 mb-4">
+                <h5 class="card-title fw-bold text-dark mb-3">📋 未繳費帳單明細</h5>
+                <div class="table-responsive">
+                    <table class="table table-hover table-sm align-middle">
+                        <thead class="table-light"><tr><th>單號</th><th>卡片名稱</th><th>帳單月份</th><th>金額</th></tr></thead>
+                        <tbody id="unpaidTableBody"><tr><td colspan="4" class="text-muted text-center py-3">暫無未繳帳單資料</td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 網頁載入時自動去後端 API 撈取未繳費總金額與明細
+    async function loadDashboard() {
+        try {
+            const res = await fetch('/api/unpaid_bills');
+            const data = await res.json();
+            if (data.status === 'success') {
+                document.getElementById('totalUnpaid').innerText = data.total_unpaid_amount;
+                const tbody = document.getElementById('unpaidTableBody');
+                if (data.unpaid_bills.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="4" class="text-muted text-center py-3">暫無未繳帳單資料</td></tr>';
+                    return;
+                }
+                tbody.innerHTML = data.unpaid_bills.map(b => `
+                    <tr><td>${b.bill_id}</td><td>${b.card_name}</td><td>${b.billing_month}</td><td class="text-danger fw-bold">${b.amount} 元</td></tr>
+                `).join('');
+            }
+        } catch (e) { console.error("無法連線到後端 API", e); }
+    }
+
+    // 送出新增信用卡
+    document.getElementById('cardForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const payload = {
+            card_name: document.getElementById('cardName').value,
+            bank_name: document.getElementById('bankName').value,
+            billing_date: parseInt(document.getElementById('billingDate').value) || null,
+            due_date: parseInt(document.getElementById('dueDate').value) || null
+        };
+        const res = await fetch('/api/add_card', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+        const data = await res.json();
+        alert(data.message);
+        if (data.status === 'success') { document.getElementById('cardForm').reset(); loadDashboard(); }
+    });
+
+    // 送出登錄帳單
+    document.getElementById('billForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const payload = {
+            card_id: parseInt(document.getElementById('billCardId').value),
+            billing_month: document.getElementById('billingMonth').value,
+            amount: parseFloat(document.getElementById('billAmount').value)
+        };
+        const res = await fetch('/api/add_bill', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+        const data = await res.json();
+        alert(data.message);
+        if (data.status === 'success') { document.getElementById('billForm').reset(); loadDashboard(); }
+    });
+
+    window.onload = loadDashboard;
+</script>
+</body>
+</html>
