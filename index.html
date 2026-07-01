@@ -1,14 +1,6 @@
-<!-- 
-==================================================================
+<!-- ==================================================================
 💳 雲端個人化信用卡管理系統 Pro - 自訂註冊與 Google 雲端同步版
-==================================================================
-【第一部分】：網頁頂部基礎配置、登入/註冊雙切換牆
-【第二部分】：主程式記帳儀表板 (包含雲端同步金鑰面板、圖表與明細區)
-【第三部分】：核心運作 JavaScript 大腦 (負責 Google Firebase 雲端連動)
-==================================================================
--->
-
-<!-- ==================== 🔒【第一部分】：基礎配置與登入/註冊牆 ==================== -->
+================================================================== -->
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
@@ -23,12 +15,12 @@
         .card-custom { border: none; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
         .header-bg { background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); color: white; padding: 25px; border-radius: 15px; margin-bottom: 25px; }
         .auth-container { max-width: 400px; margin: 80px auto; }
-        #mainApp, #registerFormCard { display: none; } /* 初始狀態控制 */
+        #mainApp, #registerFormCard { display: none; } /* 初始隱藏主介面 */
     </style>
 </head>
 <body>
 
-<!-- 🔑 登入與註冊切換牆 -->
+<!-- 🔑 登入與註冊安全牆 -->
 <div class="container auth-container">
     <!-- 登入方塊 -->
     <div id="loginFormCard" class="card card-custom p-4 text-center">
@@ -42,7 +34,7 @@
         </form>
     </div>
 
-    <!-- ➕ 註冊方塊 (新使用者自己建立帳密) -->
+    <!-- ➕ 註冊方塊 -->
     <div id="registerFormCard" class="card card-custom p-4 text-center border border-success">
         <h3 class="fw-bold text-success mb-2">📝 註冊管理員帳號</h3>
         <p class="text-muted small mb-3">建立一組專屬您的加密雲端理財保險箱</p>
@@ -54,9 +46,7 @@
         </form>
     </div>
 </div>
-
-
-<!-- ==================== 📊【第二部分】：主要記帳儀表板與雲端同步設定 ==================== -->
+<!-- ==================== 📊【第二部分】：主要記帳儀表板與功能區 ==================== -->
 <div id="mainApp" class="container my-5" style="max-width: 1100px;">
     
     <!-- 頂部功能條 -->
@@ -68,7 +58,7 @@
         </div>
     </div>
 
-    <!-- 頂部大儀表板 -->
+    <!-- 頂部大儀表板：🏦 本月總應繳金額 -->
     <div class="header-bg text-center">
         <h1 class="h3 mb-2">💳 雲端個人化信用卡管理系統 Pro</h1>
         <p class="mb-0 fs-4">🏦 雲端未繳費總計：<span id="totalUnpaid" class="fw-bold text-warning">0</span> 元</p>
@@ -77,10 +67,10 @@
     <div class="row g-4">
         <!-- 左側：手動登錄與個人隱私設定區 -->
         <div class="col-md-4">
-            <!-- 🔑 個人信箱與 PDF 密碼安全設定面板（自動記在 Google 雲端） -->
+            <!-- 🔑 個人信箱與 PDF 密碼安全設定面板 -->
             <div class="card card-custom p-3 mb-4 bg-light border border-primary">
                 <h6 class="fw-bold text-primary mb-2">🔒 個人自動化同步設定</h6>
-                <p class="text-muted" style="font-size: 11px;">此處填寫的信箱、PDF密碼會加密同步至 Google 雲端庫。 </p>
+                <p class="text-muted" style="font-size: 11px;">此處填寫的信箱、PDF密碼會加密同步至 Google 雲端庫。</p>
                 <form id="privacyForm">
                     <input type="text" id="myIdCard" class="form-control form-control-sm mb-2" placeholder="身分證字號 (解鎖PDF用)">
                     <input type="email" id="gmailAccount" class="form-control form-control-sm mb-2" placeholder="Gmail 帳號">
@@ -111,8 +101,7 @@
                 </form>
             </div>
         </div>
-
-        <!-- 右側：💳 明細與狀態區 -->
+        <!-- 右側：💳 明細與狀態區（🔴 已繳/未繳、📅 繳款截止日） -->
         <div class="col-md-8">
             <div class="card card-custom p-3 mb-4">
                 <h6 class="fw-bold text-dark mb-3">🔔 雲端信用卡帳單明細總覽</h6>
@@ -128,7 +117,7 @@
         </div>
     </div>
 
-    <!-- 📊 統計圖表區 -->
+    <!-- 📊 統計圖表區（📈 每月消費統計、📊 每年消費分析） -->
     <div class="row g-4 mt-2">
         <div class="col-md-6">
             <div class="card card-custom p-3 bg-white"><h6 class="fw-bold text-dark mb-2">📈 每月消費趨勢統計</h6><canvas id="monthChart" height="150"></canvas></div>
@@ -138,12 +127,13 @@
         </div>
     </div>
 </div>
-<!-- 給沒使用過的人看的「網頁說明手冊彈窗」 -->
+
+<!-- 💡 給沒使用過的人看的「網頁說明手冊彈窗」 -->
 <div class="modal fade" id="helpModal" tabindex="-1" aria-labelledby="helpModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content" style="border-radius: 15px; border: none;">
             <div class="modal-header bg-dark text-white" style="border-top-left-radius: 15px; border-top-right-radius: 15px;">
-                <h5 class="modal-title fw-bold" id="helpModalLabel">ℹ Mini 雲端個人化信用卡系統 - 安全手冊</h5>
+                <h5 class="modal-title fw-bold" id="helpModalLabel">ℹ️ Mini 雲端個人化信用卡系統 - 安全手冊</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body p-4">
@@ -232,7 +222,7 @@
     });
 
     window.logoutSystem = function() { sessionStorage.removeItem('cc_cloud_user'); window.location.reload(); };
-    # 系統初始化：全面從 Google 雲端即時載入資料
+    // 系統初始化：全面從 Google 雲端即時載入資料
     function initSystem() {
         if (!currentLoggedInUser) {
             document.querySelector('.auth-container').style.display = 'block';
@@ -243,19 +233,19 @@
         document.getElementById('mainApp').style.display = 'block';
         document.getElementById('currentUserLabel').innerText = currentLoggedInUser;
 
-        # 即時監聽並下載 Google 雲端上的最新理財數據
+        // 即時監聽並下載 Google 雲端上的最新理財數據
         database.ref(`users/${currentLoggedInUser}`).on('value', (snapshot) => {
             const data = snapshot.val() || {};
             
-            # 還原信用卡庫
+            // 還原信用卡庫
             db.cards = [];
             if(data.cards) { Object.keys(data.cards).forEach(k => db.cards.push(data.cards[k])); }
             
-            # 還原帳單明細
+            // 還原帳單明細
             db.bills = [];
             if(data.bills) { Object.keys(data.bills).forEach(k => db.bills.push(data.bills[k])); }
 
-            # 還原雲端隱私信箱密碼欄位
+            // 還原雲端隱私信箱密碼欄位
             const savedPrivacy = data.privacy || {};
             document.getElementById('myIdCard').value = savedPrivacy.id_card || "";
             document.getElementById('gmailAccount').value = savedPrivacy.gmail_user || "";
@@ -267,11 +257,11 @@
         });
     }
 
-    # 儲存手動記帳到 Google 雲端
+    // 儲存手動記帳到 Google 雲端
     async function saveCardToCloud(newCard) { await database.ref(`users/${currentLoggedInUser}/cards/${newCard.id}`).set(newCard); }
     async function saveBillToCloud(newBill) { await database.ref(`users/${currentLoggedInUser}/bills/${newBill.id}`).set(newBill); }
 
-    # 儲存「個人自動化同步隱私設定」到 Google 雲端
+    // 儲存「個人自動化同步隱私設定」到 Google 雲端
     document.getElementById('privacyForm').addEventListener('submit', async (e) => {
         e.preventDefault();
         const privacySettings = {
