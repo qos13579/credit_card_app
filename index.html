@@ -222,6 +222,7 @@
     });
 
     window.logoutSystem = function() { sessionStorage.removeItem('cc_cloud_user'); window.location.reload(); };
+    
     // 系統初始化：全面從 Google 雲端即時載入資料
     function initSystem() {
         if (!currentLoggedInUser) {
@@ -234,16 +235,16 @@
         document.getElementById('currentUserLabel').innerText = currentLoggedInUser;
 
         // 即時監聽並下載 Google 雲端上的最新理財數據
-        database.ref(`users/${currentLoggedInUser}`).on('value', (snapshot) => {
+        database.ref('users/' + currentLoggedInUser).on('value', function(snapshot) {
             const data = snapshot.val() || {};
             
             // 還原信用卡庫
             db.cards = [];
-            if(data.cards) { Object.keys(data.cards).forEach(k => db.cards.push(data.cards[k])); }
+            if(data.cards) { Object.keys(data.cards).forEach(function(k){ db.cards.push(data.cards[k]); }); }
             
             // 還原帳單明細
             db.bills = [];
-            if(data.bills) { Object.keys(data.bills).forEach(k => db.bills.push(data.bills[k])); }
+            if(data.bills) { Object.keys(data.bills).forEach(function(k){ db.bills.push(data.bills[k]); }); }
 
             // 還原雲端隱私信箱密碼欄位
             const savedPrivacy = data.privacy || {};
@@ -258,11 +259,11 @@
     }
 
     // 儲存手動記帳到 Google 雲端
-    async function saveCardToCloud(newCard) { await database.ref(`users/${currentLoggedInUser}/cards/${newCard.id}`).set(newCard); }
-    async function saveBillToCloud(newBill) { await database.ref(`users/${currentLoggedInUser}/bills/${newBill.id}`).set(newBill); }
+    async function saveCardToCloud(newCard) { await database.ref('users/' + currentLoggedInUser + '/cards/' + newCard.id).set(newCard); }
+    async function saveBillToCloud(newBill) { await database.ref('users/' + currentLoggedInUser + '/bills/' + newBill.id).set(newBill); }
 
     // 儲存「個人自動化同步隱私設定」到 Google 雲端
-    document.getElementById('privacyForm').addEventListener('submit', async (e) => {
+    document.getElementById('privacyForm').addEventListener('submit', async function(e) {
         e.preventDefault();
         const privacySettings = {
             id_card: document.getElementById('myIdCard').value.toUpperCase().trim(),
@@ -271,14 +272,14 @@
             yahoo_user: document.getElementById('yahooAccount').value.trim(),
             yahoo_pass: document.getElementById('yahooAppPass').value
         };
-        await database.ref(`users/${currentLoggedInUser}/privacy`).set(privacySettings);
+        await database.ref('users/' + currentLoggedInUser + '/privacy').set(privacySettings);
         alert('💾 個人自動化同步金鑰已安全同步至 Google 雲端！');
     });
 
     function renderDashboard() {
         const cardSelect = document.getElementById('billCardId');
         cardSelect.innerHTML = '<option value="">-- 選擇信用卡 --</option>';
-        db.cards.forEach(c => { cardSelect.innerHTML += `<option value="${c.id}">${c.bank_name}-${c.card_name}</option>`; });
+        db.cards.forEach(function(c) { cardSelect.innerHTML += '<option value="' + c.id + '">' + c.bank_name + '-' + c.card_name + '</option>'; });
 
         const tbody = document.getElementById('unpaidTableBody');
         let totalUnpaid = 0;
@@ -286,24 +287,22 @@
         if (db.bills.length === 0) {
             tbody.innerHTML = '<tr><td colspan="6" class="text-muted py-3">📋 暫無任何雲端紀錄。請先填寫個人同步設定、或手動新增卡片。</td></tr>';
         } else {
-            db.bills.sort((a,b) => new Date(a.due_date) - new Date(b.due_date));
-            tbody.innerHTML = db.bills.map(b => {
-                const card = db.cards.find(c => c.id === b.card_id) || { card_name: '未知卡片', bank_name: '未知' };
+            db.bills.sort(function(a,b) { return new Date(a.due_date) - new Date(b.due_date); });
+            tbody.innerHTML = db.bills.map(function(b) {
+                const card = db.cards.find(function(c) { return c.id === b.card_id; }) || { card_name: '未知卡片', bank_name: '未知' };
                 if (b.is_paid === 0) totalUnpaid += b.amount;
                 
                 const statusBadge = b.is_paid === 1 ? '<span class="badge bg-success">已繳費</span>' : '<span class="badge bg-danger">未繳費</span>';
-                const actionBtn = b.is_paid === 0 ? `<button class="btn btn-xs btn-success py-0 px-2 small" onclick="togglePay(${b.id})">確認繳款</button>` : `<button class="btn btn-xs btn-secondary py-0 px-2 small" onclick="togglePay(${b.id})">撤銷</button>`;
+                const actionBtn = b.is_paid === 0 ? '<button class="btn btn-xs btn-success py-0 px-2 small" onclick="togglePay(' + b.id + ')">確認繳款</button>' : '<button class="btn btn-xs btn-secondary py-0 px-2 small" onclick="togglePay(' + b.id + ')">撤銷</button>';
 
-                return `
-                    <tr>
-                        <td><strong>${card.bank_name}</strong> (${card.card_name})</td>
-                        <td><span class="badge bg-light text-dark">${b.billing_month}</span></td>
-                        <td class="${b.is_paid === 0 ? 'text-danger fw-bold' : 'text-muted'}">${b.amount.toLocaleString()} 元</td>
-                        <td><code>${b.due_date}</code></td>
-                        <td>${statusBadge}</td>
-                        <td>${actionBtn} <button class="btn btn-link text-danger btn-sm p-0 ms-1" onclick="deleteBill(${b.id})">刪除</button></td>
-                    </tr>
-                `;
+                return '<tr>' +
+                    '<td><strong>' + card.bank_name + '</strong> (' + card.card_name + ')</td>' +
+                    '<td><span class="badge bg-light text-dark">' + b.billing_month + '</span></td>' +
+                    '<td class="' + (b.is_paid === 0 ? 'text-danger fw-bold' : 'text-muted') + '">' + b.amount.toLocaleString() + ' 元</td>' +
+                    '<td><code>' + b.due_date + '</code></td>' +
+                    '<td>' + statusBadge + '</td>' +
+                    '<td>' + actionBtn + ' <button class="btn btn-link text-danger btn-sm p-0 ms-1" onclick="deleteBill(' + b.id + ')">刪除</button></td>' +
+                '</tr>';
             }).join('');
         }
         document.getElementById('totalUnpaid').innerText = totalUnpaid.toLocaleString();
@@ -311,18 +310,18 @@
     }
 
     window.togglePay = async function(billId) {
-        const bill = db.bills.find(b => b.id === billId);
+        const bill = db.bills.find(function(b) { return b.id === billId; });
         if (bill) { bill.is_paid = bill.is_paid === 0 ? 1 : 0; await saveBillToCloud(bill); }
     };
-    window.deleteBill = async function(billId) { if(confirm('確定刪除？')) { await database.ref(`users/${currentLoggedInUser}/bills/${billId}`).remove(); } };
+    window.deleteBill = async function(billId) { if(confirm('確定刪除？')) { await database.ref('users/' + currentLoggedInUser + '/bills/' + billId).remove(); } };
 
-    document.getElementById('cardForm').addEventListener('submit', async (e) => {
+    document.getElementById('cardForm').addEventListener('submit', async function(e) {
         e.preventDefault();
         const newCard = { id: Date.now(), card_name: document.getElementById('cardName').value, bank_name: document.getElementById('bankName').value };
         await saveCardToCloud(newCard); document.getElementById('cardForm').reset();
     });
 
-    document.getElementById('billForm').addEventListener('submit', async (e) => {
+    document.getElementById('billForm').addEventListener('submit', async function(e) {
         e.preventDefault();
         const newBill = {
             id: Date.now(),
@@ -337,13 +336,13 @@
 
     function updateCharts() {
         const months = {}, banks = {};
-        db.bills.forEach(b => {
+        db.bills.forEach(function(b) {
             months[b.billing_month] = (months[b.billing_month] || 0) + b.amount;
-            const card = db.cards.find(c => c.id === b.card_id) || { bank_name: '未知銀行' };
+            const card = db.cards.find(function(c) { return c.id === b.card_id; }) || { bank_name: '未知銀行' };
             banks[card.bank_name] = (banks[card.bank_name] || 0) + b.amount;
         });
         if (monthChart) monthChart.destroy(); if (yearChart) yearChart.destroy();
-        monthChart = new Chart(document.getElementById('monthChart'), { type: 'bar', data: { labels: Object.keys(months).sort(), datasets: [{ label: '每月總消費', data: Object.keys(months).sort().map(m => months[m]), backgroundColor: '#2a5298' }] } });
+        monthChart = new Chart(document.getElementById('monthChart'), { type: 'bar', data: { labels: Object.keys(months).sort(), datasets: [{ label: '每月總消費', data: Object.keys(months).sort().map(function(m){ return months[m]; }), backgroundColor: '#2a5298' }] } });
         yearChart = new Chart(document.getElementById('yearChart'), { type: 'pie', data: { labels: Object.keys(banks), datasets: [{ data: Object.values(banks), backgroundColor: ['#ff6384', '#36a2eb', '#cc65fe', '#ffce56', '#4bc0c0'] }] } });
     }
 
